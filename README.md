@@ -148,13 +148,20 @@ builder.Services.AddControllersWithViews();
 
 ## 🔄 Потік виконання запиту (приклад)
 
-1. Користувач відкриває `/Teams/Index`.
-2. `TeamsController` викликає `IEntityService<TeamDTO>.GetAll()`.
-3. `TeamService` (Application) через `IUnitOfWork` просить дані.
-4. `EFUnitOfWork` + репозиторій (Infrastructure) йдуть у базу через EF Core.
-5. Дані повертаються у вигляді сутностей Domain.
-6. AutoMapper перетворює їх на DTO.
-7. Контролер віддає DTO у View.
+1. Користувач відкриває `/Teams/Index`.  
+   → **Presentation**
+2. `TeamsController` викликає `IEntityService<TeamDTO>.GetAll()`.  
+   → **Presentation**
+3. `TeamService` через `IUnitOfWork` просить дані.  
+   → **Application**
+4. `EFUnitOfWork` + репозиторій йдуть у базу через EF Core.  
+   → **Infrastructure**
+5. Дані повертаються у вигляді сутностей.  
+   → **Domain**
+6. AutoMapper перетворює сутності на DTO.  
+   → **Application**
+7. Контролер віддає DTO у View.  
+   → **Presentation**
 
 Жоден шар не порушує свої межі відповідальності.
 
