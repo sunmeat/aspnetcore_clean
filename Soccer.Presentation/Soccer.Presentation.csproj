@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Soccer.Presentation</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Presentation — це composition root застосунку. Вона звертається до Application
+      (щоб отримати DTO та IEntityService у контролерах) і, лише в Program.cs,
+      до Infrastructure (щоб зареєструвати реальні реалізації в DI-контейнері).
+      Domain і Common підключені транзитивно через Application/Infrastructure,
+      але додані явно тут, бо ValidationException (Common) ловиться прямо в контролерах.
+      
+                   ┌──────────────────┐
+                   │   Presentation   │
+                   └───────┬──░───────┘
+                           │  ░
+             ┌─────────────┘  ░ (тільки для DI)
+             │                ░
+             ▼                ▼
+    ┌──────────────────┐  ┌──────────────────┐
+    │   Application    │  │  Infrastructure  │
+    └────────┬─────────┘  └─────────┬────────┘
+             │                      │
+             └───────────┬──────────┘
+                         │
+                         ▼
+            ┌────────────────────────┐
+            │         Domain         │  (Центр)
+            └────────────────────────┘
+    -->
+    <ProjectReference Include="..\Soccer.Application\Soccer.Application.csproj" />
+    <ProjectReference Include="..\Soccer.Infrastructure\Soccer.Infrastructure.csproj" />
+    <ProjectReference Include="..\Soccer.Common\Soccer.Common.csproj" />
+  </ItemGroup>
+
+</Project>

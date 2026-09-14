@@ -1,0 +1,48 @@
+﻿@model PlayerDTO
+
+@{
+    ViewBag.Title = "Редагування гравця";
+}
+
+<h2>Редагування гравця</h2>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                @Html.Label("Гравець:")
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                @Html.Label("Вік гравця:")
+                <input asp-for="Age" class="form-control" />
+                <span asp-validation-for="Age" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                @Html.Label("Позиція на полі:")
+                <input asp-for="Position" class="form-control" />
+                <span asp-validation-for="Position" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                @Html.Label("Клуб:")
+                <select asp-for="TeamId" class="form-control" asp-items="ViewBag.ListTeams as SelectList"></select>
+                <span asp-validation-for="TeamId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Редагувати" class="btn btn-primary" style="margin-top: 20px; margin-bottom: 20px;" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    @Html.ActionLink("До списку гравців", "Index")
+</div>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

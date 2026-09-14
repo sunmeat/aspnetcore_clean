@@ -1,0 +1,44 @@
+﻿@model PlayerDTO
+
+@{
+    ViewBag.Title = "Видалення гравця";
+}
+
+<h2>Видалення гравця</h2>
+
+<h3>Ви дійсно хочете видалити гравця?</h3>
+<div>
+    <hr />
+    <dl class="row">
+        <dt class = "col-sm-2">
+             @Html.Label("Гравець:")
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Name)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.Label("Вік гравця:")
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Age)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.Label("Позиція на полі:")
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Position)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.Label("Клуб:")
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Team)
+        </dd>
+    </dl>
+    
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <input type="submit" value="Видалити" class="btn btn-danger" style="margin-top: 20px; margin-bottom: 20px;" /> |
+        <a asp-action="Index">До списку гравців</a>
+    </form>
+</div>

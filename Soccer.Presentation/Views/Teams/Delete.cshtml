@@ -1,0 +1,32 @@
+﻿@model TeamDTO
+
+@{
+    ViewBag.Title = "Видалення клубу";
+}
+
+<h2>Видалення клубу</h2>
+
+<h3>Ви дійсно хочете видалити клуб?</h3>
+<div>
+    <hr />
+    <dl class="row">
+        <dt class = "col-sm-2">
+            @Html.Label("Назва клуба:")
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Name)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.Label("Тренер:")
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Coach)
+        </dd>
+    </dl>
+    
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <input type="submit" value="Видалити" class="btn btn-danger" style="margin-top: 20px; margin-bottom: 20px;" /> |
+        <a asp-action="Index">Повернутися до списку клубів</a>
+    </form>
+</div>

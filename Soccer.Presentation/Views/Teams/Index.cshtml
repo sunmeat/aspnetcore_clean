@@ -1,0 +1,38 @@
+﻿@model IEnumerable<TeamDTO> 
+
+@{
+    ViewBag.Title = "Каталог клубів";
+}
+
+<h2>Каталог клубів</h2>
+<p>
+    <a asp-action="Create">Додати клуб</a>
+</p>
+<table class="table-condensed" style="width:100%">
+    <tr>
+        <th>
+            @Html.Label("Назва клуба")
+        </th>
+        <th>
+            @Html.Label("Тренер")
+        </th>
+        <th></th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Name)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Coach)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.Id">Редагувати</a> |
+                <a asp-action="Details" asp-route-id="@item.Id">Переглянути подробиці</a> |
+                <a asp-action="Delete" asp-route-id="@item.Id">Видалити клуб</a>
+            </td>
+        </tr>
+    }
+</table>

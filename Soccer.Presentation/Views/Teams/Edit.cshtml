@@ -1,0 +1,38 @@
+﻿@model TeamDTO
+
+@{
+    ViewBag.Title = "Редагування клубу";
+}
+
+<h2>Редагування клубу</h2>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                @Html.Label("Назва клуба:")
+                <input asp-for="Name" class="form-control" />
+                <span asp-validation-for="Name" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                @Html.Label("Тренер:")
+                <input asp-for="Coach" class="form-control" />
+                <span asp-validation-for="Coach" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Редагувати клуб" class="btn btn-primary" style="margin-top: 20px; margin-bottom: 20px;" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Повернутися до списку клубів</a>
+</div>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

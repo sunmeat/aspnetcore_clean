@@ -1,0 +1,40 @@
+﻿@model PlayerDTO
+
+@{
+    ViewBag.Title = "Подробиці по гравцю";
+}
+
+<h2>Подробиці по гравцю</h2>
+<div>
+    <hr />
+    <dl class="row">
+        <dt class = "col-sm-2">
+            @Html.Label("Ім'я гравця:")
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Name)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.Label("Вік гравця:")
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Age)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.Label("Позиція на полі:")
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Position)
+        </dd>
+        <dt class = "col-sm-2">
+            @Html.Label("Клуб:")
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Team)
+        </dd>
+    </dl>
+</div>
+<p>
+    <a asp-action="Edit" asp-route-id="@Model?.Id">Редагувати дані</a> |
+    <a asp-action="Index">До списку гравців</a>
+</p>
