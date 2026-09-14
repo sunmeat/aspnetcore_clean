@@ -1,87 +1,222 @@
 # Soccer — Clean Architecture
 
-Це переробка навчального прикладу [sunmeat/aspnetcore_layers](https://github.com/sunmeat/aspnetcore_layers)
-(ASP.NET Core MVC + тришарова архітектура Presentation/BLL/DAL) під **Clean Architecture**.
-Кожен шар — окремий проєкт у спільному рішенні `Soccer.sln`.
+Навчальний проєкт на **ASP.NET Core MVC**, побудований строго за принципами **Clean Architecture** (Роберт С. Мартін).
 
-## Проєкти рішення
+Мета проєкту — показати, як правильно організувати код у великому застосунку так, щоб:
+- бізнес-логіка була повністю незалежною від фреймворків і бази даних;
+- зміни в одній частині системи мінімально впливали на інші;
+- проєкт було легко тестувати, розширювати і підтримувати.
+
+---
+
+## 🧠 Чому саме Clean Architecture?
+
+Класична тришарова архітектура (Presentation → BLL → DAL) часто призводить до того, що бізнес-логіка починає «знати» про Entity Framework, SQL Server або навіть про HTTP. Це створює жорстку зв’язаність.
+
+**Clean Architecture** розвертає залежності навпаки:
+
+> Усі залежності спрямовані **всередину** — до ядра (Domain).  
+> Зовнішні шари залежать від внутрішніх, але внутрішні **нічого не знають** про зовнішні.
+
+Це дає кілька важливих переваг:
+
+1. **Domain** можна тестувати без бази даних і веб-сервера.
+2. Можна легко замінити SQL Server на PostgreSQL, MongoDB або навіть in-memory сховище — Application і Domain не помітять різниці.
+3. Presentation (MVC, Minimal API, gRPC, Blazor) можна змінити, не чіпаючи бізнес-логіку.
+4. Код стає більш зрозумілим: кожен шар має чітку і єдину відповідальність.
+
+---
+
+## 🏗️ Структура рішення
 
 ```
 Soccer.sln
 │
-├── Soccer.Domain          — сутності (Player, Team) та контракти (IRepository, IUnitOfWork).
-│                            Не залежить ні від чого. Жодних NuGet-пакетів.
+├── Soccer.Domain                 ← Ядро (найчистіший шар)
+│   ├── Entities/
+│   │   ├── Player.cs
+│   │   └── Team.cs
+│   └── Interfaces/
+│       ├── IRepository.cs
+│       └── IUnitOfWork.cs
 │
-├── Soccer.Common          — наскрізні речі, спільні для кількох шарів.
-│                            Зараз тут лише ValidationException (його кидає Application,
-│                            а ловить Presentation).
+├── Soccer.Common                 ← Спільні утиліти
+│   └── Exceptions/
+│       └── ValidationException.cs
 │
-├── Soccer.Application     — DTO, use-case-сервіси (PlayerService, TeamService),
-│                            інтерфейс IEntityService<T>, AutoMapper-профіль.
-│                            Залежить від Domain і Common.
+├── Soccer.Application            ← Бізнес-логіка / Use Cases
+│   ├── DTO/
+│   ├── Interfaces/
+│   ├── Services/
+│   ├── Mapping/
+│   └── DependencyInjection/
 │
-├── Soccer.Infrastructure  — EF Core: SoccerContext, репозиторії, EFUnitOfWork,
-│                            DI-реєстрація (AddInfrastructure). Залежить лише від Domain.
+├── Soccer.Infrastructure         ← Реалізація доступу до даних
+│   ├── Persistence/
+│   ├── Repositories/
+│   └── DependencyInjection/
 │
-└── Soccer.Presentation    — ASP.NET Core MVC: контролери, Views, Program.cs.
-                             Композиційний корінь застосунку: єдине місце,
-                             де одночасно підключені Application та Infrastructure.
+└── Soccer.Presentation           ← Точка входу (ASP.NET Core MVC)
+    ├── Controllers/
+    ├── Views/
+    ├── wwwroot/
+    ├── Program.cs                ← Композиційний корінь
+    └── appsettings.json
 ```
 
-## Напрямок залежностей
+---
 
+## 📦 Детальний опис кожного шару
+
+### 1. Soccer.Domain — Ядро системи
+
+**Що тут знаходиться:**
+- Сутності (`Player`, `Team`) — чисті C#-класи без атрибутів EF Core.
+- Контракти (`IRepository<T>`, `IUnitOfWork`) — інтерфейси, які описують, *що* потрібно від сховища даних, але не *як* це реалізовано.
+
+**Чому саме так:**
+- Domain не повинен залежати ні від чого. Жодних NuGet-пакетів, жодних `using Microsoft.EntityFrameworkCore`.
+- Якщо бізнес-правила змінюються — змінюється тільки цей шар.
+- Усі інші шари залежать від Domain, а не навпаки. Це і є Dependency Inversion Principle у дії.
+
+### 2. Soccer.Common — Спільні речі
+
+Містить код, який потрібен кільком шарам одночасно, але не є бізнес-логікою.
+
+Зараз тут лише `ValidationException` — виняток, який:
+- кидається в `Application` (коли сутність не знайдена);
+- ловиться в `Presentation` (щоб повернути 404).
+
+**Чому окремий проєкт:**
+Якщо покласти цей виняток у Domain — Domain почне знати про «валідацію для веб».  
+Якщо покласти в Application — Presentation не зможе на нього посилатися без зайвої залежності.  
+Common вирішує цю проблему чисто.
+
+### 3. Soccer.Application — Сценарії використання (Use Cases)
+
+Тут живе вся бізнес-логіка застосунку:
+
+- **DTO** — об’єкти, які ходять між Presentation і Application (не сутності Domain!).
+- **Сервіси** (`PlayerService`, `TeamService`) — реалізують конкретні сценарії (отримати всіх гравців, додати команду тощо).
+- **Інтерфейси сервісів** (`IEntityService<T>`).
+- **AutoMapper-профілі** — єдине місце, де відбувається мапінг Entity ↔ DTO.
+- **DependencyInjection** — метод розширення `AddApplication()`, який реєструє всі сервіси та AutoMapper.
+
+**Чому Application не залежить від Infrastructure:**
+Application працює тільки з інтерфейсами з Domain (`IUnitOfWork`, `IRepository`).  
+Він *не знає*, що під капотом Entity Framework.  
+Це дозволяє писати юніт-тести на сервіси, підставляючи фейкові репозиторії.
+
+### 4. Soccer.Infrastructure — Реалізація деталей
+
+Тут знаходиться все, що стосується конкретної технології зберігання даних:
+
+- `SoccerContext` — DbContext Entity Framework Core.
+- Реалізації репозиторіїв.
+- `EFUnitOfWork`.
+- Метод розширення `AddInfrastructure(connectionString)`.
+
+**Чому Infrastructure залежить тільки від Domain:**
+Він *реалізує* інтерфейси, оголошені в Domain.  
+Application і Domain навіть не підозрюють про існування `DbContext` чи SQL Server.
+
+Якщо завтра знадобиться замінити EF Core на Dapper або іншу ORM — змінюється лише цей проєкт.
+
+### 5. Soccer.Presentation — Зовнішній шар
+
+ASP.NET Core MVC додаток:
+
+- Контролери
+- Razor-представлення
+- Статичні файли
+- `Program.cs`
+
+**Найважливіша роль `Program.cs`:**
+
+Це **композиційний корінь** (Composition Root).  
+Єдине місце в усьому рішенні, яке одночасно знає і про Application, і про Infrastructure:
+
+```csharp
+builder.Services.AddInfrastructure(connection); // реєструємо DbContext + UnitOfWork
+builder.Services.AddApplication();              // реєструємо сервіси + AutoMapper
+builder.Services.AddControllersWithViews();
 ```
-Soccer.Presentation ──► Soccer.Application ──► Soccer.Domain
-        │                       │                    ▲
-        │                       └──► Soccer.Common ───┘
-        └──────────────────► Soccer.Infrastructure ──► Soccer.Domain
-```
 
-Головне правило Clean Architecture дотримано: усі стрілки залежностей спрямовані
-всередину, до `Soccer.Domain`. Ні `Domain`, ні `Application` нічого не знають
-про Entity Framework Core, SQL Server чи ASP.NET Core MVC — ці деталі
-ізольовані в `Infrastructure` та `Presentation` відповідно.
+Завдяки цьому всі інші проєкти залишаються чистими і не знають один про одного більше, ніж потрібно.
 
-`Program.cs` у `Soccer.Presentation` — єдине місце, що посилається одразу
-на `Soccer.Application` (`AddApplication()`) і на `Soccer.Infrastructure`
-(`AddInfrastructure(connection)`), тобто виконує роль композиційного кореня.
+---
 
-## Що саме змінилося порівняно з оригіналом
+## 🔄 Потік виконання запиту (приклад)
 
-| Було (тришарова архітектура)              | Стало (Clean Architecture)                          |
-|--------------------------------------------|------------------------------------------------------|
-| `Soccer.DAL/Entities`                       | `Soccer.Domain/Entities`                             |
-| `Soccer.DAL/Interfaces` (IRepository, IUnitOfWork) | `Soccer.Domain/Interfaces` — контракти належать ядру |
-| `Soccer.DAL/EF/SoccerContext.cs`            | `Soccer.Infrastructure/Persistence/SoccerContext.cs` |
-| `Soccer.DAL/Repositories`                   | `Soccer.Infrastructure/Repositories`                 |
-| `Soccer.BLL/DTO`, `Soccer.BLL/Services`, `Soccer.BLL/Interfaces` | `Soccer.Application/DTO`, `.../Services`, `.../Interfaces` |
-| `Soccer.BLL/Infrastructure/SoccerContextExtensions.cs`, `UnitOfWorkServiceExtensions.cs` | `Soccer.Infrastructure/DependencyInjection/InfrastructureServiceExtensions.cs` (`AddInfrastructure`) |
-| Реєстрація сервісів прямо в `Program.cs`    | `Soccer.Application/DependencyInjection/ApplicationServiceExtensions.cs` (`AddApplication`) |
-| `Soccer.BLL/Infrastructure/ValidationException.cs` | `Soccer.Common/Exceptions/ValidationException.cs` |
-| `MapperConfiguration` створювався заново на кожен виклик `GetAll()` | Один `MappingProfile`, зареєстрований через `services.AddAutoMapper(...)`, `IMapper` інжектиться в сервіси |
-| `Soccer` (веброзетка MVC)                    | `Soccer.Presentation`                                |
+1. Користувач відкриває `/Teams/Index`.
+2. `TeamsController` викликає `IEntityService<TeamDTO>.GetAll()`.
+3. `TeamService` (Application) через `IUnitOfWork` просить дані.
+4. `EFUnitOfWork` + репозиторій (Infrastructure) йдуть у базу через EF Core.
+5. Дані повертаються у вигляді сутностей Domain.
+6. AutoMapper перетворює їх на DTO.
+7. Контролер віддає DTO у View.
 
-### Дрібне виправлення поведінки
+Жоден шар не порушує свої межі відповідальності.
 
-В оригіналі сервіси (`PlayerService.Get`, `TeamService.Get`) кидали
-`System.ComponentModel.DataAnnotations.ValidationException` (бо власний клас
-з `Soccer.BLL.Infrastructure` не був підключений через `using`), тоді як
-контролери ловили саме користувацький `Soccer.BLL.Infrastructure.ValidationException`.
-Через розбіжність типів `catch` фактично ніколи не спрацьовував, і запит
-неіснуючого гравця/команди призводив би до необробленого виключення (500),
-а не до очікуваного `404 NotFound`. У цій версії обидва місця використовують
-один і той самий `Soccer.Common.Exceptions.ValidationException`, тож
-`NotFound` тепер справді повертається.
+---
 
-## Запуск
+## ✨ Що реалізовано в проєкті
 
-```
-git clone <ваш форк або цей архів>
-cd Soccer-Clean
+- Повноцінний CRUD для гравців і команд
+- Repository Pattern + Unit of Work
+- AutoMapper з єдиним профілем (реєструється один раз через DI)
+- Правильна обробка ситуації «сутність не знайдена» через `ValidationException` → 404
+- Чиста реєстрація залежностей через extension-методи
+- Дотримання Dependency Rule Clean Architecture
+
+---
+
+## 🚀 Як запустити
+
+```bash
+git clone https://github.com/sunmeat/aspnetcore_clean.git
+cd aspnetcore_clean
+
 dotnet restore
 dotnet run --project Soccer.Presentation
 ```
 
-Перед запуском переконайтеся, що SQL Server доступний і `DefaultConnection`
-у `Soccer.Presentation/appsettings.json` вказує на потрібний сервер/базу.
-Стартовий маршрут (як і в оригіналі): `/Teams/Index`.
+Перед запуском відкрий файл:
+
+```
+Soccer.Presentation/appsettings.json
+```
+
+і перевір рядок підключення `DefaultConnection` (має вказувати на доступний SQL Server).
+
+Після запуску відкрий у браузері:
+
+```
+https://localhost:xxxx/Teams/Index
+```
+
+(порт подивись у консолі).
+
+---
+
+## 🛠️ Технологічний стек
+
+| Технологія               | Для чого використовується                  |
+|--------------------------|--------------------------------------------|
+| ASP.NET Core MVC         | Presentation layer                         |
+| Entity Framework Core    | Persistence (Infrastructure)               |
+| AutoMapper               | Мапінг між Domain-сутностями та DTO        |
+| SQL Server               | База даних                                 |
+| Dependency Injection     | Зв’язування всіх шарів                     |
+| .NET (актуальна LTS)     | Платформа                                  |
+
+---
+
+## 🎯 Для кого цей проєкт
+
+- Для тих, хто вивчає Clean Architecture і хоче побачити її на реальному прикладі.
+- Для тих, хто хоче зрозуміти, чому Domain має бути в центрі, а не DAL.
+- Для тих, хто планує писати підтримувані і тестовані застосунки на ASP.NET Core.
+
+Проєкт навмисно зроблений невеликим і зрозумілим, щоб можна було швидко розібратися в потоках залежностей і принципах, а не потонути в зайвому коді.
+```
